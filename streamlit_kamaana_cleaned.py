@@ -13,9 +13,7 @@ st.set_page_config(
 
 # Load sales data
 sales_df = pd.read_excel(
-    "Ventes Produits 2024.xlsx",
-    header=2,
-    sheet_name="Total Ventes KAMAANA",
+    "Ventes Produits 2024.xlsx", header=2, sheet_name="Total Ventes KAMAANA"
 )
 sales_df.columns = ["produit"] + sales_df.columns[1:].to_list()
 
