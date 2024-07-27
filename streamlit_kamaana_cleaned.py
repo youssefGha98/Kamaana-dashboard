@@ -13,9 +13,7 @@ st.set_page_config(
 
 # Load sales data
 sales_df = pd.read_excel(
-    "Ventes Produits 2024.xlsx",
-    header=2,
-    sheet_name="Total Ventes KAMAANA",
+    "Ventes Produits 2024.xlsx", header=2, sheet_name="Total Ventes KAMAANA"
 )
 sales_df.columns = ["produit"] + sales_df.columns[1:].to_list()
 
@@ -117,8 +115,11 @@ months = [
     "novembre",
     "décembre",
 ]
+uploaded_file = st.sidebar.file_uploader("Choose a file", type=["xlsx"])
+if uploaded_file is not None:
+    sales_df = pd.read_excel(uploaded_file, header=1)
+    sales_df.columns = ["produit"] + sales_df.columns[1:].to_list()
 selected_month = st.sidebar.selectbox("Select a month to display", months, index=0)
-
 # Layout with three columns
 col1, col2, col3 = st.columns((1.5, 4.5, 2), gap="medium")
 
@@ -267,28 +268,19 @@ products_df = pd.DataFrame(products).T
 
 # Display editable DataFrame
 with st.expander("Edit the product costs and prices below:"):
-    edited_products_df = st.data_editor(
+    products_df = st.data_editor(
         products_df, num_rows="dynamic", use_container_width=True
     )
+    products_df["total_cost"] = products_df.sum(axis=1)
+
 # Calcul du coût total de revient pour chaque produit
 for product, details in products.items():
     total_cost = sum(details.get(component, 0) for component in details)
     products[product]["total_cost"] = total_cost
-
-# Affichage des résultats
-products_df = pd.DataFrame(products).transpose()
 products_df = products_df.join(df_prices, how="inner")
 
 products_df["marge_brute"] = products_df["prices"] - products_df["total_cost"]
 products_df["marge_brute_%"] = products_df["marge_brute"] / products_df["prices"]
-
-# Display editable DataFrame
-with st.expander("Edit the product margins"):
-    products_margins_df = st.data_editor(
-        products_df[["marge_brute", "marge_brute_%"]],
-        num_rows="dynamic",
-        use_container_width=True,
-    )
 
 # Integrate sales data
 sales_df = sales_df.set_index("produit")
@@ -300,6 +292,7 @@ with col1:
     monthly_margin_df = pd.DataFrame(
         combined_df[selected_month] * combined_df["marge_brute"]
     )
+    monthly_margin_df.columns = ["Margin"]
     st.write(monthly_margin_df)
     total = round(monthly_margin_df.sum()[0])
     st.write(f"Total : {total}")
@@ -308,8 +301,8 @@ with col1:
     st.write(f"Total Fixed Cost: {total_fixed_costs}")
 
     earnings_to_fixed_costs_ratio = total / total_fixed_costs
-
-    earnings_to_fixed_costs_percentage = round(earnings_to_fixed_costs_ratio, 1) * 100
+    earnings_to_fixed_costs_percentage = int(earnings_to_fixed_costs_ratio * 100)
+    st.write(earnings_to_fixed_costs_percentage)
     color = "green" if earnings_to_fixed_costs_ratio > 1 else "red"
     donut_chart = make_donut(earnings_to_fixed_costs_percentage, color)
     st.altair_chart(donut_chart)
